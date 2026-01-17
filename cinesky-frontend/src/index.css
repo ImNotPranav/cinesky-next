@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar Styles */
+.cast-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+}
+
+.cast-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.cast-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+}
+
+.cast-scroll::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+.cast-scroll::-webkit-scrollbar-thumb:hover {
+    background: #C43A3A;
+}
