@@ -1,4 +1,4 @@
-# 🎬 CineSky
+# 🎬 CineSky Next
 
 A full-stack movie web application built with the MERN stack. Browse, search, and save your favorite movies!
 
