@@ -62,6 +62,11 @@ export default function Navbar() {
                                 onClick={() => setDropdownOpen(!dropdownOpen)}
                                 className="flex items-center gap-2 text-[#EDEDED] hover:text-[#C43A3A] cursor-pointer transition-colors"
                             >
+                                <img
+                                    src={`https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.name)}&backgroundColor=C43A3A&textColor=ffffff&fontSize=40`}
+                                    alt={user.name}
+                                    className="w-8 h-8 rounded-full ring-2 ring-white/10"
+                                />
                                 <span>{user.name}</span>
                                 <svg
                                     className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}

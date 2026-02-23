@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "./models/User.js";
 import Favorite from "./models/Favorite.js";
+import Review from "./models/Review.js";
 import { authMiddleware } from "./middleware/auth.js";
 
 mongoose.connect(process.env.MONGODB_URI)
@@ -145,6 +146,71 @@ app.delete("/favorites/:movieId", authMiddleware, async (req, res) => {
         return res.status(500).json({ message: "Failed to remove favorite" });
     }
 });
+
+// Reviews endpoints
+
+// Public: get all reviews for a movie
+app.get("/reviews/:movieId", async (req, res) => {
+    try {
+        const reviews = await Review.find({ movieId: parseInt(req.params.movieId) })
+            .populate("userId", "name")
+            .sort({ createdAt: -1 });
+        return res.json(reviews);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+});
+
+// Protected: get current user's reviews
+app.get("/reviews", authMiddleware, async (req, res) => {
+    try {
+        const reviews = await Review.find({ userId: req.user.userId });
+        return res.json(reviews);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+});
+
+app.post("/reviews", authMiddleware, async (req, res) => {
+    const { movieId, rating, content } = req.body;
+    if (!movieId || !rating || !content) {
+        return res.status(400).json({ message: "Missing required fields" });
+    }
+    try {
+        const review = await Review.create({
+            userId: req.user.userId,
+            movieId,
+            rating,
+            content,
+        });
+        return res.status(201).json(review);
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "Review already exists" });
+        }
+        console.log(error);
+        return res.status(500).json({ message: "Failed to add review" });
+    }
+});
+
+app.delete("/reviews/:movieId", authMiddleware, async (req, res) => {
+    try {
+        const result = await Review.findOneAndDelete({
+            userId: req.user.userId,
+            movieId: parseInt(req.params.movieId),
+        });
+        if (!result) {
+            return res.status(404).json({ message: "Review not found" });
+        }
+        return res.json({ message: "Review removed" });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Failed to remove review" });
+    }
+});
+
 
 app.listen(4000, () => console.log("API running on http://localhost:4000"));
 
