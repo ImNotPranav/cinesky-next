@@ -211,6 +211,22 @@ app.delete("/reviews/:movieId", authMiddleware, async (req, res) => {
     }
 });
 
+// Recommendations endpoint (proxies to Python FastAPI recommender)
+app.get("/recommendations", authMiddleware, async (req, res) => {
+    try {
+        const response = await fetch(
+            `http://localhost:5001/recommendations?user_id=${req.user.userId}`
+        );
+        if (!response.ok) {
+            return res.status(response.status).json({ message: "Recommender service error" });
+        }
+        const data = await response.json();
+        return res.json(data);
+    } catch (error) {
+        console.log(error);
+        return res.status(503).json({ message: "Recommender service unavailable" });
+    }
+});
 
 app.listen(4000, () => console.log("API running on http://localhost:4000"));
 
