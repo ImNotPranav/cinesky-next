@@ -76,26 +76,11 @@ def _build_feature_text(movie: dict) -> str:
 
 
 def get_recommendations(user_id: str, top_n: int = 20) -> list[dict]:
-    """
-    Content-based movie recommender.
-
-    1. Fetches the user's favorites from MongoDB.
-    2. Enriches each favorite with TMDB details (overview, genres).
-    3. Fetches candidate popular movies from TMDB.
-    4. Builds TF-IDF vectors over combined overview+genre text.
-    5. Averages the user's favorite vectors into a profile vector.
-    6. Ranks candidates by cosine similarity to the profile.
-    7. Returns the top-N recommendations (excluding already-favorited movies).
-    """
-    # --- 1. User favorites ---------------------------------------------------
     favorites = get_user_favorites(user_id)
     if not favorites:
-        # No favorites -> fall back to plain popular movies
         return get_candidate_movies()[:top_n]
 
     fav_movie_ids = {f["movieId"] for f in favorites}
-
-    # --- 2. Enrich favorites with TMDB data ----------------------------------
     enriched_favorites = []
     for fav in favorites:
         details = get_movie_details_tmdb(fav["movieId"])
@@ -105,14 +90,10 @@ def get_recommendations(user_id: str, top_n: int = 20) -> list[dict]:
     if not enriched_favorites:
         return get_candidate_movies()[:top_n]
 
-    # --- 3. Candidate movies --------------------------------------------------
     candidates = get_candidate_movies()
-    # Remove movies the user already likes
     candidates = [m for m in candidates if m["id"] not in fav_movie_ids]
     if not candidates:
         return []
-
-    # --- 4. Build TF-IDF matrix -----------------------------------------------
     all_movies = enriched_favorites + candidates
     corpus = [_build_feature_text(m) for m in all_movies]
 
@@ -123,15 +104,10 @@ def get_recommendations(user_id: str, top_n: int = 20) -> list[dict]:
     fav_vectors = tfidf_matrix[:n_fav]
     candidate_vectors = tfidf_matrix[n_fav:]
 
-    # --- 5. User profile (mean of favorite vectors) ---------------------------
     user_profile = fav_vectors.mean(axis=0)
-    # Convert to 2-D array for cosine_similarity
     user_profile = np.asarray(user_profile)
-
-    # --- 6. Cosine similarity -------------------------------------------------
     similarities = cosine_similarity(user_profile, candidate_vectors).flatten()
 
-    # --- 7. Rank and return top-N ---------------------------------------------
     top_indices = similarities.argsort()[::-1][:top_n]
 
     recommendations = []
@@ -149,21 +125,3 @@ def get_recommendations(user_id: str, top_n: int = 20) -> list[dict]:
             "similarity_score": round(float(similarities[idx]), 4),
         })
     return recommendations
-
-
-# ---------- Example usage ----------
-if __name__ == "__main__":
-    USER_ID = "696a0f1fb3728d2232a4b30f"
-
-    print("=== User Favorites ===")
-    user_favorites = get_user_favorites(USER_ID)
-    df = pd.DataFrame(user_favorites)
-    print(df)
-
-    print("\n=== Recommendations ===")
-    recs = get_recommendations(USER_ID, top_n=10)
-    df_recs = pd.DataFrame(recs)
-    if not df_recs.empty:
-        print(df_recs[["title", "vote_average", "similarity_score"]])
-    else:
-        print("No recommendations found.")
